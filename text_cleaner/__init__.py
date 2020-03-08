@@ -33,9 +33,7 @@ def get_all_articles_in_dir(path_to_dir: str) -> dict:
     return articles_dict
 
 
-def from_file_create_training_case(stop_words: set, path_to_file
-
-: str) -> [str, str]:
+def from_file_create_training_case(stop_words: set, path_to_file: str) -> [str, str]:
     with open(path_to_file) as current_file:
         content = [line.strip() for line in current_file.readlines()]
     return [

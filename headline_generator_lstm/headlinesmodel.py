@@ -6,36 +6,38 @@ from tensorflow.keras.layers import Input, LSTM, Embedding, Dense, Concatenate, 
 from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping
 
-from headline_generator.attention_layer import AttentionLayer
+from headline_generator_lstm.attention_layer import AttentionLayer
 
 
 class HeadlinesModel:
-    def __init__(self, max_article_len,
+    def __init__(self,
+
+                 max_article_len,
                  max_headline_len,
-                 headlines_voc_size,
+
                  articles_voc_size,
+                 headlines_voc_size,
+
                  articles_training,
                  headlines_training,
+
                  articles_validation,
                  headlines_validation,
+
                  article_index_word,
                  headline_index_word,
+
                  article_word_index,
                  headline_word_index,
                  ):
 
         backend.clear_session()
-        # config = tf.ConfigProto(log_device_placement=True)
-        # config.gpu_options.per_process_gpu_memory_fraction = 0.3  # don't hog all vRAM
-        # config.gpu_options.allow_growth = True
-        # config.operation_timeout_in_ms = 15000  # terminate on long hangs
-        # self.sess = tf.InteractiveSession("", config=config)
 
         self.max_article_len = max_article_len
         self.max_headline_len = max_headline_len
 
-        latent_dim = 60
-        embedding_dim = 50
+        latent_dim = 85
+        embedding_dim = 35
 
         # Encoder
         encoder_inputs = Input(shape=(self.max_article_len,))
@@ -82,7 +84,7 @@ class HeadlinesModel:
         self.model.summary()
 
         self.model.compile(optimizer="rmsprop", loss="sparse_categorical_crossentropy")
-        self.es = EarlyStopping(monitor="val_loss", mode="min", verbose=1, patience=2)
+        self.es = EarlyStopping(monitor="val_loss", mode="min", verbose=1, patience=3)
 
         history = self._train(
             articles_training,
@@ -140,46 +142,14 @@ class HeadlinesModel:
         return self.model.fit(
             [articles_training, headlines_training[:, :-1]],
             headlines_training.reshape(headlines_training.shape[0], headlines_training.shape[1], 1)[:, 1:],
-            epochs=6, callbacks=[self.es], batch_size=150,
+            epochs=50, callbacks=[self.es], batch_size=75,
             validation_data=(
                 [articles_validation, headlines_validation[:, :-1]],
-                headlines_validation.reshape(headlines_validation.shape[0], headlines_validation.shape[1], 1)[:, 1:]))
+                headlines_validation.reshape(headlines_validation.shape[0], headlines_validation.shape[1], 1)[:, 1:]
+            )
+        )
 
     def decode_sequence(self, input_seq):
-        # # Encode the input as state vectors.
-        # e_out, e_h, e_c = self.encoder_model.predict(input_seq)
-        #
-        # # Generate empty target sequence of length 1.
-        # target_seq = np.zeros((1, 1))
-        #
-        # # Populate the first word of target sequence with the start word.
-        # target_seq[0, 0] = self.target_word_index['sostok']
-        #
-        # stop_condition = False
-        # decoded_sentence = ''
-        # while not stop_condition:
-        #
-        #     output_tokens, h, c = self.decoder_model.predict([target_seq] + [e_out, e_h, e_c])
-        #
-        #     # Sample a token
-        #     sampled_token_index = np.argmax(output_tokens[0, -1, :])
-        #     sampled_token = self.reverse_target_word_index[sampled_token_index]
-        #     if sampled_token != 'eostok':
-        #         decoded_sentence += ' ' + sampled_token
-        #
-        #     # Exit condition: either hit max length or find stop word.
-        #     if sampled_token == 'eostok' or len(decoded_sentence.split()) >= (self.max_headline_len - 1):
-        #         stop_condition = True
-        #
-        # # Update the target sequence (of length 1).
-        # target_seq = np.zeros((1, 1))
-        # target_seq[0, 0] = sampled_token_index
-        #
-        # # Update internal states
-        # e_h, e_c = h, c
-        #
-        # return decoded_sentence
-
         # Encode the input as state vectors.
         e_out, e_h, e_c = self.encoder_model.predict(input_seq)
 
@@ -189,31 +159,30 @@ class HeadlinesModel:
         # Populate the first word of target sequence with the start word.
         target_seq[0, 0] = self.target_word_index['sostok']
 
-        stop_condition = False
         decoded_sentence = ''
-        while not stop_condition:
-
+        for i in range(self.max_headline_len - 1):
             output_tokens, h, c = self.decoder_model.predict([target_seq] + [e_out, e_h, e_c])
 
-            # Sample a token
-            sampled_token_index = np.argmax(output_tokens[0, -1, :])
+            prediction_weights = output_tokens[0, -1, :]
+            prediction_weights[2] = prediction_weights[2] * 0.2 * i
+            prediction_weights[0] = 0
+
+            sampled_token_index = np.argmax(prediction_weights)
+
             sampled_token = self.reverse_target_word_index[sampled_token_index]
+            print(sampled_token)
 
             if sampled_token != 'eostok':
                 decoded_sentence += ' ' + sampled_token
+            else:
+                break
 
-            # Exit condition: either hit max length or find stop word.
-            if sampled_token == 'eostok' or len(decoded_sentence.split()) >= (self.max_headline_len - 1):
-                stop_condition = True
-
-            # Update the target sequence (of length 1).
             target_seq = np.zeros((1, 1))
             target_seq[0, 0] = sampled_token_index
 
-            # Update internal states
             e_h, e_c = h, c
 
-        return decoded_sentence
+        return decoded_sentence[1:]
 
     def sequence_to_summary(self, input_sequence):
         return " ".join([

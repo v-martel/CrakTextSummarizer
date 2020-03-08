@@ -1,7 +1,7 @@
 from text_cleaner import get_all_dir_path, get_all_articles_in_dir
 from text_cleaner.helper_functions import get_recommended_length
 from text_cleaner.tokenizer import tokenize_data
-from headline_generator.headlinesmodel import HeadlinesModel
+from headline_generator_lstm.headlinesmodel import HeadlinesModel
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -9,6 +9,7 @@ warnings.filterwarnings("ignore")
 
 def print_training_summaries(article_training, headline_training, model):
     for i in range(50):
+        print("healine training is : ", headline_training[i])
         print_training_summary(
             model.sequence_to_text(article_training[i]),
             model.decode_sequence(article_training[i].reshape(1, model.max_article_len)),
@@ -22,15 +23,8 @@ def print_training_summary(article, predicted_headline, headline):
 
 
 def test_training() -> int:
-    # dir_list = get_all_dir_path("./data/bbc")
-    # print(dir_list)
-    # headlines_articles_dict = {"headlines": [], "articles": []}
-    # list_dict = list(map(lambda x: get_all_articles_in_dir(x), dir_list))
-    # for i in list_dict:
-    #     headlines_articles_dict["headlines"] += i["headlines"]
-    #     headlines_articles_dict["articles"] += i["articles"]
-
-    headlines_articles_dict = get_all_articles_in_dir("./data/bbc/business")
+    # headlines_articles_dict = get_all_articles_in_dir("./data/bbc/business")
+    headlines_articles_dict = get_all_articles_in_dir("./data/bbc/entertainment")
 
     max_headline_length = get_recommended_length(headlines_articles_dict["headlines"])
     max_article_length = get_recommended_length(headlines_articles_dict["articles"])
@@ -53,14 +47,19 @@ def test_training() -> int:
     headlines_model = HeadlinesModel(
         max_article_len=max_article_length,
         max_headline_len=max_headline_length,
-        headlines_voc_size=headlines_voc_size,
+
         articles_voc_size=articles_voc_size,
+        headlines_voc_size=headlines_voc_size,
+
         articles_training=articles_training,
         headlines_training=headlines_training,
+
         articles_validation=articles_validation,
         headlines_validation=headlines_validation,
+
         article_index_word=article_index_word,
         headline_index_word=headline_index_word,
+
         article_word_index=article_word_index,
         headline_word_index=headline_word_index)
 
