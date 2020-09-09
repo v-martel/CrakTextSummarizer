@@ -1,0 +1,23 @@
+version: '3.0'
+
+services:
+  watch:
+    build: .
+    tty: true
+    ports:
+      - 3000:3000
+    volumes:
+      - .:/model/CrakTextSummarizer
+    env_file:
+      - .env
+    command: "bash -c 'nodemon src/main.py'"
+
+  shell:
+    build: .
+    entrypoint: [ "/bin/bash" ]
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/model/CrakTextSummarizer
+    env_file:
+      - .env
