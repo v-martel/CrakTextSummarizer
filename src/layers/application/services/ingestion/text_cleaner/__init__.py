@@ -5,7 +5,7 @@ from os.path import isfile, isdir, join
 from data.contractions import contraction_mapping
 from nltk.corpus import stopwords
 
-from src.text_cleaner.helper_functions import add_start_end_token
+from src.layers.application.services.ingestion.text_cleaner import add_start_end_token
 
 
 # nltk.download()

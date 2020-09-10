@@ -1,7 +1,7 @@
-from src.text_cleaner import get_all_articles_in_dir
-from src.text_cleaner.helper_functions import get_recommended_length
-from src.text_cleaner.tokenizer import tokenize_data
-from src.headline_generator_lstm import HeadlinesModel
+from src.layers.application.services.ingestion.text_cleaner import get_all_articles_in_dir
+from src.layers.application.services.ingestion.text_cleaner.helper_functions import get_recommended_length
+from src.layers.application.services.ingestion.text_cleaner.tokenizer import tokenize_data
+from src.layers.domain.model.headline_generator_lstm.headlinesmodel import HeadlinesModel
 import warnings
 
 warnings.filterwarnings("ignore")

@@ -10,7 +10,7 @@ services:
       - .:/model/CrakTextSummarizer
     env_file:
       - .env
-    command: "bash -c 'nodemon src/main.py'"
+    command: "bash -c 'conda env update --prefix ./env --file text_summarizer.yml --prune; activate text_summarizer; nodemon src/main.py'"
 
   shell:
     build: .

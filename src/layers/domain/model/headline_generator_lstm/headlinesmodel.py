@@ -6,7 +6,7 @@ from tensorflow.keras.layers import Input, LSTM, Embedding, Dense, Concatenate, 
 from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping
 
-from src.headline_generator_lstm import AttentionLayer
+from src.layers.domain.model import AttentionLayer
 
 
 class HeadlinesModel:
