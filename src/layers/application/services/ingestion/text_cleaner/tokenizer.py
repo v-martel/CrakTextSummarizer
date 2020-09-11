@@ -2,65 +2,71 @@ from sklearn.model_selection import train_test_split
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
+from src.layers.domain.model.digestible import Digestible
 
-def tokenize_data(headline_article_dict: dict, max_headline_len: int, max_article_len: int) -> dict:
-    articles_training, articles_validation, headlines_training, headlines_validations = split_training_validation(
-        headline_article_dict
+
+def tokenize_data(digestible: Digestible, max_output_len: int, max_input_len: int) -> dict:
+    inputs_training, inputs_validation, outputs_training, outputs_validations = split_training_validation(
+        digestible
     )
 
-    article_tokenizer = Tokenizer()
-    headline_tokenizer = Tokenizer()
+    inputs_tokenizer = Tokenizer()
+    outputs_tokenizer = Tokenizer()
 
-    article_tokenizer.fit_on_texts(articles_training)
-    headline_tokenizer.fit_on_texts(headlines_training)
+    inputs_tokenizer.fit_on_texts(inputs_training)
+    outputs_tokenizer.fit_on_texts(outputs_training)
 
-    article_rare_count, article_total_count, article_rare_frequency, article_total_frequency = handle_rare_words(
-        article_tokenizer, 5)
-    headline_rare_count, headline_total_count, headline_rare_frequency, headline_total_frequency = handle_rare_words(
-        headline_tokenizer, 3)
+    input_rare_count, input_total_count, input_rare_frequency, input_total_frequency = handle_rare_words(
+        inputs_tokenizer, 5)
+    output_rare_count, output_total_count, output_rare_frequency, output_total_frequency = handle_rare_words(
+        outputs_tokenizer, 3)
 
     # prepare a tokenizer for reviews on training data
-    article_tokenizer = Tokenizer(num_words=article_total_count - article_rare_count)
-    article_tokenizer.fit_on_texts(articles_training)
+    inputs_tokenizer = Tokenizer(num_words=input_total_count - input_rare_count)
+    inputs_tokenizer.fit_on_texts(inputs_training)
 
-    headline_tokenizer = Tokenizer(num_words=headline_total_count - headline_rare_count)
-    headline_tokenizer.fit_on_texts(headlines_training)
+    outputs_tokenizer = Tokenizer(num_words=output_total_count - output_rare_count)
+    outputs_tokenizer.fit_on_texts(outputs_training)
 
     # convert text sequences into integer sequences and padding zero upto maximum length
-    articles_training = tokenize_article(article_tokenizer, max_article_len, articles_training)
-    articles_validation = tokenize_article(article_tokenizer, max_article_len, articles_validation)
+    inputs_training = tokenize_input(inputs_tokenizer, max_input_len, inputs_training)
+    inputs_validation = tokenize_input(inputs_tokenizer, max_input_len, inputs_validation)
 
-    headlines_training = tokenize_headline(headline_tokenizer, max_headline_len, headlines_training)
-    headlines_validations = tokenize_headline(headline_tokenizer, max_headline_len, headlines_validations)
+    outputs_training = tokenize_output(outputs_tokenizer, max_output_len, outputs_training)
+    outputs_validations = tokenize_output(outputs_tokenizer, max_output_len, outputs_validations)
 
     # size of vocabulary
-    articles_voc_size = article_tokenizer.num_words + 1
-    headlines_voc_size = headline_tokenizer.num_words + 1
+    articles_voc_size = inputs_tokenizer.num_words + 1
+    headlines_voc_size = outputs_tokenizer.num_words + 1
 
     return {
-        "headlines": (headlines_training,
-                      headlines_validations,
-                      headlines_voc_size,
-                      headline_tokenizer.index_word,
-                      headline_tokenizer.word_index
-                      ),
-        "articles": (articles_training,
-                     articles_validation,
-                     articles_voc_size,
-                     article_tokenizer.index_word,
-                     article_tokenizer.word_index
-                     )
+        "outputs": (
+            max_output_len,
+            outputs_training,
+            outputs_validations,
+            headlines_voc_size,
+            outputs_tokenizer.index_word,
+            outputs_tokenizer.word_index
+        ),
+        "inputs": (
+            max_input_len,
+            inputs_training,
+            inputs_validation,
+            articles_voc_size,
+            inputs_tokenizer.index_word,
+            inputs_tokenizer.word_index
+        )
     }
 
 
-def tokenize_headline(headline_tokenizer: Tokenizer, max_headline_len: int, headline_list: [str]):
-    new_headline_list = headline_tokenizer.texts_to_sequences(headline_list)
-    return pad_sequences(new_headline_list, maxlen=max_headline_len, padding="post")
+def tokenize_output(output_tokenizer: Tokenizer, max_output_len: int, output_list: [str]):
+    new_output_list = output_tokenizer.texts_to_sequences(output_list)
+    return pad_sequences(new_output_list, maxlen=max_output_len, padding="post")
 
 
-def tokenize_article(article_tokenizer: Tokenizer, max_article_len: int, article_list: [str]):
-    new_article_list = article_tokenizer.texts_to_sequences(article_list)
-    return pad_sequences(new_article_list, maxlen=max_article_len, padding="post")
+def tokenize_input(input_tokenizer: Tokenizer, max_input_len: int, input_list: [str]):
+    new_input_list = input_tokenizer.texts_to_sequences(input_list)
+    return pad_sequences(new_input_list, maxlen=max_input_len, padding="post")
 
 
 def handle_rare_words(tokenizer: Tokenizer, threshold: int) -> (int, int, int, int):
@@ -79,12 +85,12 @@ def handle_rare_words(tokenizer: Tokenizer, threshold: int) -> (int, int, int, i
     return count, total_count, frequency, total_frequency
 
 
-def split_training_validation(headline_article_dict: dict) -> ([str], [str], [str], [str]):
-    articles_training, articles_validation, headlines_training, headlines_validation = train_test_split(
-        headline_article_dict["articles"],
-        headline_article_dict["headlines"],
+def split_training_validation(digestible: Digestible) -> ([str], [str], [str], [str]):
+    inputs_training, inputs_validation, outputs_training, outputs_validation = train_test_split(
+        digestible.outputs,
+        digestible.inputs,
         test_size=0.15,
         random_state=0,
         shuffle=True)
 
-    return articles_training, articles_validation, headlines_training, headlines_validation
+    return inputs_training, inputs_validation, outputs_training, outputs_validation

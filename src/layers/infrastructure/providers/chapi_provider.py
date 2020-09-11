@@ -9,12 +9,10 @@ class ChapiProvider:
     def __init__(self):
         self.config = configuration.layers.infrastructure.providers.chapi_provider
 
-    def execute_query(self):
+    def execute_query(self) -> dict:
         response = requests.post(
             url=self.config.chapi_url,
-            json={'query': queryMfcTagsAndTitles}
+            json={'query': queryMfcTagsAndTitles(self.config.chapi_token)}
         )
 
-        if response.status_code == 200:
-            return json.loads(response.content.decode('utf-8'))
-        return None
+        return json.loads(response.content.decode('utf-8'))['data'] if response.status_code == 200 else None

@@ -1,7 +1,8 @@
-queryMfcTagsAndTitles = """
+def queryMfcTagsAndTitles(token: str) -> str:
+    return """
 {
   PremiumVideos(
-    token: ""
+    token: "%s"
     filters: [
       { key: "system_source_name", value: "mfc" }
       { key: "tags", value: null, condition: GREATER_THAN}
@@ -19,4 +20,4 @@ queryMfcTagsAndTitles = """
     }
   }
 }
-"""
+""" % token

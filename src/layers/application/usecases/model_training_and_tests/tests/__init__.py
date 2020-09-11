@@ -1,7 +1,7 @@
 from src.layers.application.services.ingestion.text_cleaner import get_all_articles_in_dir
 from src.layers.application.services.ingestion.text_cleaner.helper_functions import get_recommended_length
 from src.layers.application.services.ingestion.text_cleaner.tokenizer import tokenize_data
-from src.layers.domain.model.headline_generator_lstm.headlinesmodel import HeadlinesModel
+from src.layers.domain.model.headline_generator_lstm.summarizer_model import SummarizerModel
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -44,7 +44,7 @@ def test_training() -> int:
     print("headlines_voc_size = ", headlines_voc_size)
     print("articles_voc_size = ", articles_voc_size)
 
-    headlines_model = HeadlinesModel(
+    headlines_model = SummarizerModel(
         max_article_len=max_article_length,
         max_headline_len=max_headline_length,
 

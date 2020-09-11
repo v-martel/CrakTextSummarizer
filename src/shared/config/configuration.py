@@ -28,6 +28,7 @@ class ProvidersConfiguration:
 class ChapiProvider:
     def __init__(self):
         self.chapi_url = getenv('CHAPI_URL')
+        self.chapi_token = getenv('CHAPI_TOKEN')
 
 
 # should be used as a singleton
