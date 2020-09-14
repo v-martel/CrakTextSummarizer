@@ -6,44 +6,44 @@ from tensorflow.keras.layers import Input, LSTM, Embedding, Dense, Concatenate, 
 from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping
 
-from src.layers.domain.model.headline_generator_lstm.attention_layer import AttentionLayer
+from src.layers.domain.model.text_generator_lstm.attention_layer import AttentionLayer
 
 
 class SummarizerModel:
     def __init__(self,
 
-                 max_article_len,
-                 max_headline_len,
+                 max_input_len,
+                 max_output_len,
 
-                 articles_voc_size,
-                 headlines_voc_size,
+                 inputs_voc_size,
+                 outputs_voc_size,
 
-                 articles_training,
-                 headlines_training,
+                 inputs_training,
+                 outputs_training,
 
-                 articles_validation,
-                 headlines_validation,
+                 inputs_validation,
+                 outputs_validation,
 
-                 article_index_word,
-                 headline_index_word,
+                 input_index_word,
+                 output_index_word,
 
-                 article_word_index,
-                 headline_word_index,
+                 input_word_index,
+                 output_word_index,
                  ):
 
         backend.clear_session()
 
-        self.max_article_len = max_article_len
-        self.max_headline_len = max_headline_len
+        self.max_input_len = max_input_len
+        self.max_output_len = max_output_len
 
         latent_dim = 300
         embedding_dim = 120
 
         # Encoder
-        encoder_inputs = Input(shape=(self.max_article_len,))
+        encoder_inputs = Input(shape=(self.max_input_len,))
 
         # embedding layer
-        enc_emb = Embedding(articles_voc_size, embedding_dim, trainable=True)(encoder_inputs)
+        enc_emb = Embedding(inputs_voc_size, embedding_dim, trainable=True)(encoder_inputs)
 
         # encoder LSTM 1
         encoder_lstm1 = LSTM(latent_dim, return_sequences=True, return_state=True, dropout=0.4, recurrent_dropout=0.4)
@@ -61,7 +61,7 @@ class SummarizerModel:
         decoder_inputs = Input(shape=(None,))
 
         # embedding layer
-        dec_emb_layer = Embedding(headlines_voc_size, embedding_dim, trainable=True)
+        dec_emb_layer = Embedding(outputs_voc_size, embedding_dim, trainable=True)
         dec_emb = dec_emb_layer(decoder_inputs)
 
         decoder_lstm = LSTM(latent_dim, return_sequences=True, return_state=True, dropout=0.4, recurrent_dropout=0.2)
@@ -76,7 +76,7 @@ class SummarizerModel:
         decoder_concat_input = Concatenate(axis=-1, name="concat_layer")([decoder_outputs, attn_out])
 
         # Dense Layer
-        decoder_dense = TimeDistributed(Dense(headlines_voc_size, activation="softmax"))
+        decoder_dense = TimeDistributed(Dense(outputs_voc_size, activation="softmax"))
         decoder_outputs = decoder_dense(decoder_concat_input)
 
         # Define the model
@@ -87,15 +87,15 @@ class SummarizerModel:
         self.es = EarlyStopping(monitor="val_loss", mode="min", verbose=1, patience=3)
 
         history = self._train(
-            articles_training,
-            headlines_training,
-            articles_validation,
-            headlines_validation
+            inputs_training,
+            outputs_training,
+            inputs_validation,
+            outputs_validation
         )
 
-        self.reverse_target_word_index = headline_index_word
-        self.reverse_source_word_index = article_index_word
-        self.target_word_index = headline_word_index
+        self.reverse_target_word_index = output_index_word
+        self.reverse_source_word_index = input_index_word
+        self.target_word_index = output_word_index
 
         # Encode the input sequence to get the feature vector
         self.encoder_model = Model(inputs=encoder_inputs, outputs=[encoder_outputs, state_h, state_c])
@@ -104,7 +104,7 @@ class SummarizerModel:
         # Below tensors will hold the states of the previous time step
         decoder_state_input_h = Input(shape=(latent_dim,))
         decoder_state_input_c = Input(shape=(latent_dim,))
-        decoder_hidden_state_input = Input(shape=(self.max_article_len, latent_dim))
+        decoder_hidden_state_input = Input(shape=(self.max_input_len, latent_dim))
 
         # Get the embeddings of the decoder sequence
         dec_emb2 = dec_emb_layer(decoder_inputs)
@@ -135,17 +135,17 @@ class SummarizerModel:
             [decoder_outputs2] + [state_h2, state_c2]
         )
 
-    def _train(self, articles_training,
-               headlines_training,
-               articles_validation,
-               headlines_validation):
+    def _train(self, inputs_training,
+               outputs_training,
+               inputs_validation,
+               outputs_validation):
         return self.model.fit(
-            [articles_training, headlines_training[:, :-1]],
-            headlines_training.reshape(headlines_training.shape[0], headlines_training.shape[1], 1)[:, 1:],
+            [inputs_training, outputs_training[:, :-1]],
+            outputs_training.reshape(outputs_training.shape[0], outputs_training.shape[1], 1)[:, 1:],
             epochs=10, callbacks=[self.es], batch_size=75,
             validation_data=(
-                [articles_validation, headlines_validation[:, :-1]],
-                headlines_validation.reshape(headlines_validation.shape[0], headlines_validation.shape[1], 1)[:, 1:]
+                [inputs_validation, outputs_validation[:, :-1]],
+                outputs_validation.reshape(outputs_validation.shape[0], outputs_validation.shape[1], 1)[:, 1:]
             )
         )
 
@@ -160,7 +160,7 @@ class SummarizerModel:
         target_seq[0, 0] = self.target_word_index['sostok']
 
         decoded_sentence = ''
-        for i in range(self.max_headline_len - 1):
+        for i in range(self.max_output_len - 1):
             output_tokens, h, c = self.decoder_model.predict([target_seq] + [e_out, e_h, e_c])
 
             prediction_weights = output_tokens[0, -1, :]

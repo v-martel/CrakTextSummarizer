@@ -53,7 +53,7 @@ class TrainUsecase:
         print('sostok error? ', outputs_word_index['sostok'])
 
         summarizer_model = SummarizerModel(
-            max_article_len=max_input_len,
+            max_input_len=max_input_len,
             max_headline_len=max_output_len,
 
             articles_voc_size=inputs_voc_size,
