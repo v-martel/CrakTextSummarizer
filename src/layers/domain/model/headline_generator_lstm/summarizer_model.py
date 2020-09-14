@@ -36,8 +36,8 @@ class SummarizerModel:
         self.max_article_len = max_article_len
         self.max_headline_len = max_headline_len
 
-        latent_dim = 85
-        embedding_dim = 35
+        latent_dim = 300
+        embedding_dim = 120
 
         # Encoder
         encoder_inputs = Input(shape=(self.max_article_len,))
@@ -142,7 +142,7 @@ class SummarizerModel:
         return self.model.fit(
             [articles_training, headlines_training[:, :-1]],
             headlines_training.reshape(headlines_training.shape[0], headlines_training.shape[1], 1)[:, 1:],
-            epochs=50, callbacks=[self.es], batch_size=75,
+            epochs=10, callbacks=[self.es], batch_size=75,
             validation_data=(
                 [articles_validation, headlines_validation[:, :-1]],
                 headlines_validation.reshape(headlines_validation.shape[0], headlines_validation.shape[1], 1)[:, 1:]

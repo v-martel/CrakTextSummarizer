@@ -6,8 +6,8 @@ def get_max_length(list_of_processed_headlines: [str]) -> int:
 
 
 def get_recommended_length(list_of_processed_headlines: [str]) -> int:
-    return ceil(0.8 * get_max_length(list_of_processed_headlines))
+    return ceil(get_max_length(list_of_processed_headlines))
 
 
-def add_start_end_token(list_of_headlines: list) -> list:
-    return list(map(lambda x: "sostok " + x + " eostok", list_of_headlines))
+def add_start_end_token(list_of_outputs: list) -> list:
+    return list(map(lambda x: "sostok " + x + " eostok", list_of_outputs))

@@ -6,9 +6,7 @@ from data.contractions import contraction_mapping
 from nltk.corpus import stopwords
 
 from src.layers.application.services.ingestion.text_cleaner.helper_functions import add_start_end_token
-
-
-# nltk.download()
+from src.layers.domain.model.digestible import Digestible
 
 
 def get_all_dir_path(path_to_data: str) -> [str]:
@@ -42,6 +40,15 @@ def from_file_create_training_case(stop_words: set, path_to_file: str) -> [str, 
     ]
 
 
+def clean_Digestible(digestible: Digestible):
+    stop_words = set(stopwords.words("english"))
+
+    inputs = list(map(lambda x: clean_string(stop_words, x), digestible.inputs))
+    outputs = list(map(lambda x: clean_string(stop_words, x), digestible.outputs))
+
+    return Digestible(inputs, outputs)
+
+
 def clean_string(stop_words: set, string: str) -> str:
     # this was almost exclusively copied from:
     #   https://www.analyticsvidhya.com/blog/2019/06/comprehensive-guide-text-summarization-using-deep-learning-python/
@@ -55,7 +62,9 @@ def clean_string(stop_words: set, string: str) -> str:
     output_string = re.sub("[^a-zA-Z]", " ", output_string)
     tokens = [word for word in output_string.split() if word not in stop_words]
     long_words = []
+
     for word in tokens:
         if len(word) >= 3:
             long_words.append(word)
+
     return (" ".join(long_words)).strip()

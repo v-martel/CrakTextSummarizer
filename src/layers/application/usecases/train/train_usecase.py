@@ -1,5 +1,6 @@
+from src.layers.application.services.ingestion.text_cleaner import add_start_end_token, clean_Digestible
 from src.layers.application.services.ingestion.text_cleaner.helper_functions import get_recommended_length
-from src.layers.application.services.ingestion.text_cleaner.tokenizer import tokenize_data
+from src.layers.application.services.ingestion.text_cleaner.tokenizer import SummarizerTokenizer
 from src.layers.domain.model.digestible import Digestible
 from src.layers.domain.model.headline_generator_lstm.summarizer_model import SummarizerModel
 from src.layers.infrastructure.providers.chapi_provider import ChapiProvider
@@ -11,34 +12,45 @@ warnings.filterwarnings("ignore")
 class TrainUsecase:
     def __init__(self):
         self.chapi_provider = ChapiProvider()
+        self.tokenizer_service = SummarizerTokenizer()
 
     def do(self):
-        self._process(
-            self._digest(
-                self._ingest()
-            )
-        )
+        data = self._ingest()
+        tokenized_data = self._digest(data)
+        self._process(tokenized_data)
 
     def _ingest(self) -> Digestible:
         data = self.chapi_provider.execute_query()['PremiumVideos']['Data']
 
         inputs = list(map(lambda x: ' '.join(x['tags']), data))
-        outputs = list(map(lambda x: x['title'], data))
+        outputs = add_start_end_token(list(map(lambda x: x['title'], data)))
 
-        return Digestible(
-            inputs=inputs,
-            outputs=outputs
+        return clean_Digestible(
+            Digestible(
+                inputs=inputs,
+                outputs=outputs
+            )
         )
 
     def _digest(self, data: Digestible):
         max_output_length = get_recommended_length(data.outputs)
         max_input_length = get_recommended_length(data.inputs)
 
-        return tokenize_data(data, max_output_length, max_input_length)
+        return self.tokenizer_service.tokenize_data(data, max_output_length, max_input_length)
 
     def _process(self, tokenized_data: dict):
-        max_output_len, outputs_training, outputs_validation, outputs_voc_size, outputs_index_word, outputs_word_index = tokenized_data['outputs']
-        max_input_len, inputs_training, inputs_validation, inputs_voc_size, inputs_index_word, inputs_word_index = tokenized_data['inputs']
+        max_output_len, outputs_training, outputs_validation, outputs_voc_size, outputs_index_word, outputs_word_index = \
+        tokenized_data['outputs']
+        # print(outputs_word_index)
+
+        max_input_len, inputs_training, inputs_validation, inputs_voc_size, inputs_index_word, inputs_word_index = \
+        tokenized_data['inputs']
+        print(max_input_len)
+
+        print('outputs voc size = ', outputs_voc_size)
+        print('input voc size = ', inputs_voc_size)
+
+        print('sostok error? ', outputs_word_index['sostok'])
 
         summarizer_model = SummarizerModel(
             max_article_len=max_input_len,
@@ -68,7 +80,8 @@ class TrainUsecase:
             self.print_training_summary(
                 model.sequence_to_text(article_training[i]),
                 model.decode_sequence(article_training[i].reshape(1, model.max_article_len)),
-                model.sequence_to_summary(headline_training[i]))
+                model.sequence_to_summary(headline_training[i])
+            )
 
     def print_training_summary(self, article, predicted_headline, headline):
         print("Input: ", article)
