@@ -142,7 +142,7 @@ class SummarizerModel:
         return self.model.fit(
             [inputs_training, outputs_training[:, :-1]],
             outputs_training.reshape(outputs_training.shape[0], outputs_training.shape[1], 1)[:, 1:],
-            epochs=10, callbacks=[self.es], batch_size=75,
+            epochs=20, callbacks=[self.es], batch_size=75,
             validation_data=(
                 [inputs_validation, outputs_validation[:, :-1]],
                 outputs_validation.reshape(outputs_validation.shape[0], outputs_validation.shape[1], 1)[:, 1:]
