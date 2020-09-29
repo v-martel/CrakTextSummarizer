@@ -16,8 +16,8 @@ class TrainUsecase:
 
     def do(self):
         data = self._ingest()
-        # tokenized_data = self._digest(data)
-        # self._process(tokenized_data)
+        tokenized_data = self._digest(data)
+        self._process(tokenized_data)
 
     def _ingest(self) -> Digestible:
         data = self.chapi_provider.get_all_vids()
@@ -65,7 +65,7 @@ class TrainUsecase:
             output_word_index=outputs_word_index
         )
 
-        self.print_training_summaries(inputs_training, outputs_training, summarizer_model)
+        self.save_training_summaries(inputs_training, outputs_training, summarizer_model)
 
     def print_training_summaries(self, article_training, headline_training, model):
         for i in range(50):
@@ -76,7 +76,28 @@ class TrainUsecase:
                 model.sequence_to_summary(headline_training[i])
             )
 
+    def save_training_summaries(self, article_training, headline_training, model):
+        summary = ''
+        for i in range(200):
+            summary += self.get_training_summary(
+                model.sequence_to_text(article_training[i]),
+                model.sequence_to_summary(headline_training[i]),
+                model.decode_sequence(article_training[i].reshape(1, model.max_input_len))
+            )
+
+        file = open('./data/results/results.txt', 'w')
+        file.write(summary)
+        file.close()
+
+
     def print_training_summary(self, article, predicted_headline, headline):
         print("Input: ", article)
         print("Original output: ", headline)
         print("Predicted output: ", predicted_headline, "\n")
+
+    def get_training_summary(self, article, headline, predicted_headline):
+        return """
+            Input: %s
+            Original output: %s
+            Predicted output: %s \n
+        """ % (article, headline, predicted_headline)
